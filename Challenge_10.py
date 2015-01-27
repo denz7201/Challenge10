@@ -19,10 +19,13 @@ clb = pyrax.cloud_loadbalancers
 dns = pyrax.cloud_dns
 cf = pyrax.cloudfiles
 
+#Setup variables
+build_num = 2
+build_name = 'denz7201_CH10_'
 
 # define functions
 
-def build_server(serv_name, my_img_id, flavor_512_id):
+def build_server(serv_name, my_img_id, flavor_id):
   return cs.servers.create(serv_name, my_img_id, flavor_512_id)
 
 def get_server_data(server_name):
@@ -34,6 +37,7 @@ def get_server_data(server_name):
   print "Networks:", server_obj.networks
   return ()
 
+# Pick an image Function
 def get_image_obj(OS_name, PVHVM_bool):
   if PVHVM_bool :
     my_img = [img for img in cs.images.list()
@@ -45,12 +49,22 @@ def get_image_obj(OS_name, PVHVM_bool):
     and "PVHVM" not in img.name][0]
   return (my_img)
 
+# Pick a Flavor Function
 def get_flavor_obj(Instance, ram_select):
   my_flavor = [flavor for flavor in cs.flavors.list()
   if str(Instance) in flavor.human_id
   and flavor.ram == ram_select][0]
   return (my_flavor)
-  
+
+# Build Server Wrapper Function
+def
+server_dict={}
+for this_one in range (1, build_num + 1):
+  serv_name = build_name + str(this_one)
+  serv_obj = build_server (serv_name, image_obj, flavor_obj)
+  server_dict[serv_name] = serv_obj
+
+
   
   # Get the private network IPs for the servers
 server1_ip = server1.networks["private"][0]
