@@ -18,6 +18,8 @@ cs = pyrax.cloudservers
 clb = pyrax.cloud_loadbalancers
 dns = pyrax.cloud_dns
 cf = pyrax.cloudfiles
+server_dict={}
+nodes = ""
 
 #Setup variables
 build_num = 2
@@ -25,8 +27,8 @@ build_name = 'denz7201_CH10_'
 
 # define functions
 
-def build_server(serv_name, my_img_id, flavor_id):
-  return cs.servers.create(serv_name, my_img_id, flavor_512_id)
+def build_server(serv_name):
+  return cs.servers.create(serv_name, my_img.id, my_flavor.id)
 
 def get_server_data(server_name):
   print "Retrieving",server_name ,"Information"
@@ -57,25 +59,39 @@ def get_flavor_obj(Instance, ram_select):
   return (my_flavor)
 
 # Build Server Wrapper Function
-def
-server_dict={}
+def build_one():
+  for this_one in range (1, build_num + 1):
+    serv_name = build_name + str(this_one)
+    serv_obj = build_server (serv_name)
+    server_dict[serv_name] = serv_obj
+  return ()
+# check the server status and wait for it until it is ready
+def check_ready():
+  for this_one in range (1, build_num + 1):
+    server_name = build_name + str(this_one)
+    server_obj = server_dict[server_name]
+    print server_obj
+    resultz = pyrax.utils.wait_until(server_obj, "status", ["ACTIVE", "ERROR"])
+  return(resultz)
+# main
+
+my_img = get_image_obj("Ubuntu 14", 1)
+my_flavor = get_flavor_obj("standard", 512)
+build_one()
+resultz = check_ready()
+# Get the private network IPs for the servers create a node and setup the lb
+vip = clb.VirtualIP(type="PUBLIC")
+lb = clb.create("denz7201_ch10_lb", port=80, protocol="HTTP", nodes=[], virtual_ips=[vip])
+resultz = pyrax.utils.wait_until(lb, "status", ["ACTIVE", "ERROR"])
 for this_one in range (1, build_num + 1):
-  serv_name = build_name + str(this_one)
-  serv_obj = build_server (serv_name, image_obj, flavor_obj)
-  server_dict[serv_name] = serv_obj
-
-
-  
-  # Get the private network IPs for the servers
-server1_ip = server1.networks["private"][0]
-server2_ip = server2.networks["private"][0]
-
-# Use the IPs to create the nodes
-node1 = clb.Node(address=server1_ip, port=80, condition="ENABLED")
-node2 = clb.Node(address=server2_ip, port=80, condition="ENABLED")
-
-lb = clb.create("example_lb", port=80, protocol="HTTP",
-        nodes=[node1, node2], virtual_ips=[vip])
+  this_server = build_name + str(this_one)
+  server_obj = server_dict[this_server]
+  this_server_ip = server_obj.networks["private"][0]
+  this_node = clb.Node(address=this_server_ip, port=80, condition="ENABLED")
+  resultz = pyrax.utils.wait_until(lb, "status", ["ACTIVE", "ERROR"])
+  lb.add_nodes([this_node])
+html = "<html><body>Sorry, something is amiss!</body></html>"
+lb.set_error_page(html)
 
 
 
@@ -93,4 +109,5 @@ Write an application that will:
     Write the error page html to a file in cloud files for backup.
 
 Whew! That one is worth 8 points!
+
 '''
